@@ -66,26 +66,30 @@ node(params.NODE) {
     }
 
     stage("Tests") {
-        dir("${repoDir}/backend") {
-            try {
-                log "Running backend tests"
-                sh "mvn test"
-                log "Backend tests completed"
-            } catch (err) {
-                unstable("Backend tests failed")
+        ansicolor('xterm') {
+            dir("${repoDir}/backend") {
+                try {
+                    log "Running backend tests"
+                    sh "mvn -q test"
+                    log "Backend tests completed"
+                } catch (err) {
+                    unstable("Backend tests failed")
+                }
             }
         }
     }
 
     stage("Build Backend") {
-        dir("${repoDir}/backend") {
-            log "Setting backend version to ${pkgVersion}"
-            sh "mvn -B -q versions:set -DnewVersion=${pkgVersion} -DgenerateBackupPoms=false"
-            log "Backend version set"
+        ansicolor('xterm') {
+            dir("${repoDir}/backend") {
+                log "Setting backend version to ${pkgVersion}"
+                sh "mvn -B -q versions:set -DnewVersion=${pkgVersion} -DgenerateBackupPoms=false"
+                log "Backend version set"
 
-            log "Building backend"
-            sh "mvn clean verify"
-            log "Backend built"
+                log "Building backend"
+                sh "mvn -q clean verify"
+                log "Backend built"
+            }
         }
     }
 
