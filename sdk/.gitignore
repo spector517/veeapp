@@ -1,0 +1,11 @@
+# Generated source files (produced by openapi-generator-cli)
+src/
+
+# OpenAPI spec (produced by mvn verify)
+openapi.yaml
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/

@@ -1,0 +1,6 @@
+# Protect manually maintained files from being overwritten by the generator
+package.json
+tsconfig.json
+README.md
+.gitignore
+openapitools.json

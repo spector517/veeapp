@@ -1,0 +1,102 @@
+/* 
+
+Jenkins Deploy pipeline
+
+Required non-default plugins:
+
+1. AnsiColor
+2. Build Name and Description Setter
+3. Ansible
+
+Required parameters list:
+
+1. NODE
+2. VEEAPP_VERSION
+3. VEEPEENET_VERSION
+4. HOSTS (format: [<user>@]<host>[:<port>],... — user is optional, default: root; port is optional, default: 22)
+5. HOST_SSH_CRED
+6. IP_ADDRESS
+7. REPO_CLONE_URL
+8. REPO_BRANCH
+
+Optional parameters:
+
+1. CHECK
+
+*/
+
+node(params.NODE) {
+
+    cleanWs()
+
+    stage("Checks") {
+        requiredParametersNames = [
+            "NODE", "VEEAPP_VERSION", "VEEPEENET_VERSION",
+            "HOSTS", "HOST_SSH_CRED", "IP_ADDRESS",
+            "REPO_CLONE_URL", "REPO_BRANCH"
+        ]
+        undefinedParams = []
+        requiredParametersNames.each { paramName ->
+            if (!params[paramName]) {
+                undefinedParams << paramName
+            }
+        }
+        if (undefinedParams) {
+            error("Required params are undefined: $undefinedParams")
+        }
+    }
+
+    repoDir = "${pwd()}/veeapp"
+    inventoryPath = "${pwd()}/inventory.ini"
+    deployPlaybookPath = "$repoDir/deploy-playbook.yml"
+
+    buildName "#$BUILD_NUMBER $params.VEEAPP_VERSION"
+
+    stage("Sources") {
+        dir(repoDir) {
+            log "Cloning $params.REPO_CLONE_URL, branch: $params.REPO_BRANCH"
+            git url: params.REPO_CLONE_URL, branch: params.REPO_BRANCH
+            log "Repository cloned"
+        }
+    }
+
+    stage("Prepare") {
+        log("Generating inventory.ini")
+        lines = params.HOSTS.split(',').collect { entry ->
+            trimmed = entry.trim()
+            userParts = trimmed.split('@', 2)
+            user = userParts.size() > 1 ? userParts[0].trim() : 'root'
+            hostAndPort = userParts.size() > 1 ? userParts[1].trim() : userParts[0].trim()
+            portParts = hostAndPort.split(':', 2)
+            host = portParts[0].trim()
+            port = portParts.size() > 1 ? portParts[1].trim() : '22'
+            "$host ansible_port=$port ansible_user=$user"
+        }
+        inventoryContent = "[all]\n" + lines.join('\n') + "\n"
+        writeFile file: inventoryPath, text: inventoryContent
+        log("inventory.ini generated")
+    }
+
+    stage("Deploy") {
+        ansiColor {
+            ansiblePlaybook(
+                playbook: deployPlaybookPath,
+                inventory: inventoryPath,
+                credentialsId: params.HOST_SSH_CRED,
+                disableHostKeyChecking: true,
+                extraVars: [
+                    veeapp_version: params.VEEAPP_VERSION.replaceAll('^v', ''),
+                    veepeenet_version: params.VEEPEENET_VERSION.replaceAll('^v', '')
+                ],
+                extras: "${params.CHECK ? '--check' : ''}",
+                colorized: true
+            )
+        }
+    }
+}
+
+def log(message) {
+    timestamps {
+        echo "$message"
+    }
+}

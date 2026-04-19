@@ -1,0 +1,3 @@
+resources/frontend/dist
+resources/backend/*.jar
+*.deb

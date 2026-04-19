@@ -1,0 +1,6 @@
+/etc/nginx/sites-available/veeapp
+/etc/fail2ban/filter.d/nginx-veeapp-auth.conf
+/etc/fail2ban/jail.d/veeapp.local
+/etc/letsencrypt/renewal-hooks/pre/veeapp-pre-hook.sh
+/etc/letsencrypt/renewal-hooks/post/veeapp-post-hook.sh
+/etc/systemd/system/veeapp-backend.service

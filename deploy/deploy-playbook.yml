@@ -1,0 +1,69 @@
+- name: Deploy and install VeePeeNET and VeeApp on remote hosts
+  hosts: all
+  tasks:
+    - name: Create temporary directory on remote host
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: veeapp
+      register: remote_temp_dir
+      check_mode: false
+
+    - name: Download VeePeeNET deb package
+      ansible.builtin.get_url:
+        url: "https://github.com/spector517/veepeenet/releases/download/v{{ veepeenet_version }}/veepeenet_{{ veepeenet_version }}_amd64.deb"
+        dest: "{{ remote_temp_dir.path }}/veepeenet_{{ veepeenet_version }}_amd64.deb"
+        mode: '0644'
+      check_mode: false
+
+    - name: Download VeeApp deb package
+      ansible.builtin.get_url:
+        url: "https://github.com/spector517/veeapp/releases/download/v{{ veeapp_version }}/veeapp_{{ veeapp_version }}_all.deb"
+        dest: "{{ remote_temp_dir.path }}/veeapp_{{ veeapp_version }}_all.deb"
+        mode: '0644'
+      check_mode: false
+
+    - name: Ensure VeeApp init directory exists
+      ansible.builtin.file:
+        path: /etc/default/veeapp
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+    - name: Check init config exists
+      ansible.builtin.file:
+        path: /etc/default/veeapp/init.conf
+        state: present
+        owner: root
+        group: root
+        mode: '0600'
+      become: true
+      register: init_config_check
+
+    - name: Create VeeApp init config
+      ansible.builtin.copy:
+        dest: /etc/default/veeapp/init.conf
+        content: |
+          IP_ADDRESS={{ inventory_hostname }}
+        owner: root
+        group: root
+        mode: '0600'
+      become: true
+      when: not init_config_check.stat.exists
+
+    - name: Install VeePeeNET deb package
+      ansible.builtin.apt:
+        deb: "{{ remote_temp_dir.path }}/veepeenet_{{ veepeenet_version }}_amd64.deb"
+      become: true
+
+    - name: Install VeeApp deb package
+      ansible.builtin.apt:
+        deb: "{{ remote_temp_dir.path }}/veeapp_{{ veeapp_version }}_all.deb"
+      become: true
+
+    - name: Clean up temporary files
+      ansible.builtin.file:
+        path: "{{ remote_temp_dir.path }}"
+        state: absent
+      check_mode: false

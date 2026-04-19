@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+    configure)
+        INIT_CONF="/etc/default/veeapp/init.conf"
+        CERTBOT_VENV="/opt/certbot/venv"
+        CERTBOT_BIN="/usr/local/bin/certbot"
+        CERT_NAME="veeapp"
+        HTPASSWD_FILE="/etc/nginx/veeapp.htpasswd"
+        CRON_ENTRY="0 3 */5 * * ${CERTBOT_BIN} renew --quiet"
+
+        . "${INIT_CONF}"
+
+        # --- Генерация учётных данных (только при первой установке) ------------
+
+        if [[ -z "${AUTH_USERNAME:-}" ]]; then
+            AUTH_USERNAME="admin_$(openssl rand -hex 4)"
+            AUTH_PASSWORD="$(openssl rand -base64 18)"
+
+            cat >> "${INIT_CONF}" <<EOF
+AUTH_USERNAME=${AUTH_USERNAME}
+AUTH_PASSWORD=${AUTH_PASSWORD}
+WEB_URL=https://${IP_ADDRESS}:8443
+EOF
+        fi
+
+        # --- Nginx htpasswd ---------------------------------------------------
+
+        htpasswd -cb "${HTPASSWD_FILE}" "${AUTH_USERNAME}" "${AUTH_PASSWORD}"
+        chmod 640 "${HTPASSWD_FILE}"
+        chown root:www-data "${HTPASSWD_FILE}"
+
+        # --- Certbot ----------------------------------------------------------
+
+        if [[ ! -d "${CERTBOT_VENV}" ]]; then
+            python3 -m venv "${CERTBOT_VENV}"
+        fi
+
+        "${CERTBOT_VENV}/bin/pip" install --upgrade pip certbot -q
+        ln -sf "${CERTBOT_VENV}/bin/certbot" "${CERTBOT_BIN}"
+
+        # --- TLS-сертификат ---------------------------------------------------
+
+        if [[ ! -f "/etc/letsencrypt/live/${CERT_NAME}/fullchain.pem" ]]; then
+            ufw_active=false
+            if ufw status 2>/dev/null | grep -q "Status: active"; then
+                ufw_active=true
+                ufw allow 80/tcp
+            fi
+
+            "${CERTBOT_BIN}" certonly \
+                --non-interactive \
+                --preferred-profile shortlived \
+                --webroot \
+                --webroot-path /var/www/html \
+                --ip-address "${IP_ADDRESS}" \
+                --cert-name "${CERT_NAME}" \
+                --agree-tos
+
+            if [[ "${ufw_active}" == true ]]; then
+                ufw delete allow 80/tcp
+            fi
+        fi
+
+        # --- Cron для обновления сертификата ----------------------------------
+
+        if ! crontab -l 2>/dev/null | grep -qF "${CERTBOT_BIN} renew"; then
+            (crontab -l 2>/dev/null || true; echo "${CRON_ENTRY}") | crontab -
+        fi
+
+        # --- Nginx ------------------------------------------------------------
+
+        if [[ ! -L /etc/nginx/sites-enabled/veeapp ]]; then
+            ln -s /etc/nginx/sites-available/veeapp /etc/nginx/sites-enabled/veeapp
+        fi
+
+        if [[ -L /etc/nginx/sites-enabled/default ]]; then
+            rm /etc/nginx/sites-enabled/default
+        fi
+
+        nginx -t
+        systemctl reload nginx
+
+        # --- Fail2ban ---------------------------------------------------------
+
+        systemctl restart fail2ban
+
+        # --- Backend service --------------------------------------------------
+
+        systemctl daemon-reload
+        systemctl enable --now veeapp-backend.service
+
+        # --- UFW --------------------------------------------------------------
+
+        if ufw status 2>/dev/null | grep -q "Status: active"; then
+            if ! ufw status | grep -q "8443/tcp"; then
+                ufw allow 8443/tcp
+            fi
+        fi
+        ;;
+esac
+
+exit 0

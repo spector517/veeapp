@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+    purge)
+        rm -f /etc/nginx/veeapp.htpasswd
+        rm -f /etc/nginx/sites-enabled/veeapp
+        rm -rf /opt/certbot/venv
+        rm -f /usr/local/bin/certbot
+
+        # Удалить cron-задание certbot renew
+        if crontab -l 2>/dev/null | grep -qF "certbot renew"; then
+            crontab -l 2>/dev/null | grep -vF "certbot renew" | crontab - || true
+        fi
+
+        rm -rf /etc/default/veeapp
+
+        systemctl daemon-reload
+
+        if systemctl is-active --quiet nginx; then
+            systemctl reload nginx || true
+        fi
+
+        if systemctl is-active --quiet fail2ban; then
+            systemctl restart fail2ban || true
+        fi
+        ;;
+
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+esac
+
+exit 0

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INIT_CONF="/etc/default/veeapp/init.conf"
+
+if [[ ! -f "${INIT_CONF}" ]]; then
+    echo "veeapp: файл ${INIT_CONF} не найден." >&2
+    echo "veeapp: создайте файл с переменной IP_ADDRESS перед установкой:" >&2
+    echo "  mkdir -p /etc/default/veeapp" >&2
+    echo "  echo 'IP_ADDRESS=<ваш_IP>' > ${INIT_CONF}" >&2
+    exit 1
+fi
+
+. "${INIT_CONF}"
+
+if [[ -z "${IP_ADDRESS:-}" ]]; then
+    echo "veeapp: переменная IP_ADDRESS не задана в ${INIT_CONF}." >&2
+    exit 1
+fi
+
+exit 0

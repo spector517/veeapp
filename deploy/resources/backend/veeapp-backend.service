@@ -1,0 +1,13 @@
+[Unit]
+Description=VeeApp
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/etc/veeapp
+ExecStart=/usr/bin/java -jar /usr/local/opt/veeapp/veeapp-backend.jar
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

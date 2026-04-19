@@ -1,0 +1,30 @@
+server:
+  forward-headers-strategy: framework
+  address: 127.0.0.1
+  port: 8080
+
+spring:
+  application:
+    name: veeapp-backend
+  threads:
+    virtual:
+      enabled: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+app:
+  xray:
+    config-path: /usr/local/etc/xray/config.json
+  command:
+    timeout-ms: 60000
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  

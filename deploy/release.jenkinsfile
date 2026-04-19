@@ -1,0 +1,187 @@
+/* 
+
+Jenkins Release pipeline
+
+Required non-default plugins:
+
+1. HTTP Request
+2. Pipeline Utility Steps
+3. Build Name and Description Setter
+
+Build agent requirements: git, mvn, npm, dpkg-deb
+
+Required parameters list:
+
+1. NODE
+2. DISTRIB_VERSION
+3. REPO_CLONE_URL
+4. REPO_BRANCH
+5. CREATE_RELEASE_URL
+6. UPLOAD_ASSETS_URL
+7. AUTH_TOKEN
+
+Optional parameters:
+
+1. CREATE_RELEASE
+
+*/
+
+node(params.NODE) {
+
+    cleanWs()
+
+    stage("Checks") {
+        requiredParametersNames = [
+            "NODE", "DISTRIB_VERSION",
+            "REPO_CLONE_URL", "REPO_BRANCH",
+            "CREATE_RELEASE_URL", "UPLOAD_ASSETS_URL", "AUTH_TOKEN"
+        ]
+        undefinedParams = []
+        requiredParametersNames.each { paramName ->
+            if (params[paramName] == null || params[paramName] == "") {
+                undefinedParams << paramName
+            }
+        }
+        if (undefinedParams) {
+            error("Required params are undefined: $undefinedParams")
+        }
+    }
+
+    buildName "#$BUILD_NUMBER $DISTRIB_VERSION"
+
+    repoDir = "${pwd()}/veeapp"
+    pkgDir = "${pwd()}/pkg"
+    pkgVersion = "${DISTRIB_VERSION.replaceAll('^v', '')}"
+    debName = "veeapp_${pkgVersion}_amd64.deb"
+    debPath = "${pwd()}/$debName"
+    backendJarPath = "${repoDir}/backend/target/veeapp-backend-${pkgVersion}.jar"
+    frontendDistDir = "${repoDir}/deploy/resources/frontend/dist"
+
+    stage("Sources") {
+        dir(repoDir) {
+            log "Cloning $params.REPO_CLONE_URL, branch: $params.REPO_BRANCH"
+            git url: params.REPO_CLONE_URL, branch: params.REPO_BRANCH
+            log "Repository cloned"
+        }
+    }
+
+    stage("Tests") {
+        dir("${repoDir}/backend") {
+            try {
+                log "Running backend tests"
+                sh "mvn test"
+                log "Backend tests completed"
+            } catch (err) {
+                unstable("Backend tests failed")
+            }
+        }
+    }
+
+    stage("Build Backend") {
+        dir("${repoDir}/backend") {
+            log "Setting backend version to ${pkgVersion}"
+            sh "mvn -B -q versions:set -DnewVersion=${pkgVersion} -DgenerateBackupPoms=false"
+            log "Backend version set"
+
+            log "Building backend"
+            sh "mvn clean verify"
+            log "Backend built"
+        }
+    }
+
+    stage("Build SDK") {
+        dir("${repoDir}/sdk") {
+            log "Installing SDK dependencies"
+            sh "npm install"
+            log "SDK dependencies installed"
+
+            log "Building SDK"
+            sh "npm run generate"
+            log "SDK built"
+        }
+    }
+
+    stage("Build Frontend") {
+        dir("${repoDir}/frontend") {
+            log "Installing frontend dependencies"
+            sh "npm install"
+            log "Dependencies installed"
+
+            log "Building frontend"
+            sh "npm run build"
+            log "Frontend built"
+        }
+    }
+
+    stage("Distrib") {
+        log "Building deb package"
+
+        sh "rm -rf '${pkgDir}'"
+        sh "mkdir -p '${pkgDir}'"
+        sh "cp -R '${repoDir}/deploy/deb/DEBIAN' '${pkgDir}/DEBIAN'"
+
+        ["preinst", "postinst", "prerm", "postrm"].each { script ->
+            sh "chmod 755 '${pkgDir}/DEBIAN/${script}'"
+        }
+        sh "sed 's/^Version:.*/Version: ${pkgVersion}/' '${repoDir}/deploy/deb/DEBIAN/control' > '${pkgDir}/DEBIAN/control'"
+
+        sh "install -Dm644 '${backendJarPath}' '${pkgDir}/usr/local/opt/veeapp/veeapp-backend.jar'"
+        sh "mkdir -p '${pkgDir}/usr/local/etc/veeapp'"
+        sh "cp -R '${frontendDistDir}/.' '${pkgDir}/usr/local/etc/veeapp/'"
+
+        sh "install -Dm644 '${repoDir}/deploy/resources/nginx/veeapp.conf' '${pkgDir}/etc/nginx/sites-available/veeapp'"
+        sh "install -Dm644 '${repoDir}/deploy/resources/fail2ban/nginx-veeapp-auth.conf' '${pkgDir}/etc/fail2ban/filter.d/nginx-veeapp-auth.conf'"
+        sh "install -Dm644 '${repoDir}/deploy/resources/fail2ban/veeapp-jail.local' '${pkgDir}/etc/fail2ban/jail.d/veeapp.local'"
+        sh "install -Dm755 '${repoDir}/deploy/resources/certbot/pre-hook.sh' '${pkgDir}/etc/letsencrypt/renewal-hooks/pre/veeapp-pre-hook.sh'"
+        sh "install -Dm755 '${repoDir}/deploy/resources/certbot/post-hook.sh' '${pkgDir}/etc/letsencrypt/renewal-hooks/post/veeapp-post-hook.sh'"
+        sh "install -Dm644 '${repoDir}/deploy/resources/backend/veeapp-backend.service' '${pkgDir}/etc/systemd/system/veeapp-backend.service'"
+
+        sh "dpkg-deb --build --root-owner-group '${pkgDir}' '${debPath}'"
+
+        archiveArtifacts artifacts: debName
+        log "Deb package archived: ${debName}"
+    }
+
+    if (params.CREATE_RELEASE) {
+        stage("Release") {
+            withCredentials([string(credentialsId: AUTH_TOKEN, variable: "github_token")]) {
+                log "Creating release draft"
+                releaseResponse = httpRequest url: CREATE_RELEASE_URL, contentType: "APPLICATION_JSON_UTF8", httpMode: 'POST',
+                    customHeaders: [
+                        [name: "Authorization", value: "Bearer $github_token"],
+                    ],
+                    requestBody: writeJSON(
+                        json: [
+                            tag_name: DISTRIB_VERSION,
+                            target_commitish: REPO_BRANCH,
+                            name: "VeeApp $DISTRIB_VERSION",
+                            draft: true,
+                            prerelease: false,
+                            generate_release_notes: false
+                        ],
+                        returnText: true
+                    )
+                releaseId = readJSON(text: releaseResponse.content)["id"]
+                log "Release draft created (id: $releaseId)"
+
+                log "Uploading deb package to release draft"
+                httpRequest url: "$UPLOAD_ASSETS_URL/$releaseId/assets?name=$debName", httpMode: 'POST',
+                    contentType: "APPLICATION_OCTETSTREAM",
+                    customHeaders: [
+                        [name: "Authorization", value: "Bearer $github_token"],
+                    ],
+                    uploadFile: debPath,
+                    wrapAsMultipart: false
+                log "Deb package uploaded"
+            }
+        }
+    } else {
+        log "Skip release creation"
+    }
+}
+
+def log(message) {
+    timestamps {
+        echo "$message"
+    }
+}

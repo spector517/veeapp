@@ -1,0 +1,17 @@
+[nginx-veeapp-auth]
+enabled = true
+port = 8443
+filter = nginx-veeapp-auth
+logpath = /var/log/nginx/veeapp_error.log
+maxretry = 5
+findtime = 600
+bantime = 1800
+
+[nginx-veeapp-recidive]
+enabled = true
+filter = recidive
+logpath = /var/log/fail2ban.log
+maxretry = 10
+findtime = 86400
+bantime = 604800
+banaction = %(banaction_allports)s
