@@ -14,7 +14,7 @@ No database — all state lives in Xray's config file (`/usr/local/etc/xray/conf
 
 | Module | Path | Stack |
 |---|---|---|
-| Backend | `backend/` | Java 21, Spring Boot 4.1.0-M3, Lombok, Jackson 3.x (`tools.jackson`), SpringDoc OpenAPI |
+| Backend | `backend/` | Java 25, Spring Boot 4.1.0-M3, Lombok, Jackson 3.x (`tools.jackson`), SpringDoc OpenAPI |
 | Frontend | `frontend/` | Vue 3.5, Vite 8, TypeScript 5.8, Vuetify 3.8 (dark theme), Pinia 3, Vue Router 4 |
 | SDK | `sdk/` | Auto-generated TypeScript Axios client from OpenAPI spec |
 | Deploy | `deploy/` | `.deb` packaging, Nginx, Fail2ban, systemd, certbot |
@@ -120,7 +120,7 @@ com.github.spector517.veeapp.backend
 - Backend listens on `127.0.0.1:8080` only — no direct external access.
 - Nginx handles TLS termination (Let's Encrypt, port 8443) and Basic Auth (`.htpasswd`).
 - Fail2ban protects against brute-force (5 attempts / 10 min → 30 min ban; repeat → 7 day ban).
-- `.deb` package depends on: `nginx`, `fail2ban`, `openjdk-21-jre-headless`, `python3-venv`, `apache2-utils`, `openssl`, `veepeenet (>= 2.4.1)`.
+- `.deb` package depends on: `nginx`, `fail2ban`, `openjdk-25-jre-headless`, `python3-venv`, `apache2-utils`, `openssl`, `veepeenet (>= 2.4.1)`.
 
 ## CI/CD
 
