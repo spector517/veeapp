@@ -54,7 +54,7 @@ node(params.NODE) {
     pkgVersion = "${DISTRIB_VERSION.replaceAll('^v', '')}"
     debName = "veeapp_${pkgVersion}_amd64.deb"
     debPath = "${pwd()}/$debName"
-    backendJarPath = "${repoDir}/backend/target/veeapp-backend-${pkgVersion}.jar"
+    backendJarPath = "${repoDir}/deploy/resources/backend/veeapp-backend-${pkgVersion}.jar"
     frontendDistDir = "${repoDir}/deploy/resources/frontend/dist"
 
     stage("Sources") {
