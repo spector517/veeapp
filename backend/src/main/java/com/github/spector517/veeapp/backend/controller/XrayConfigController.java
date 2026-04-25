@@ -3,6 +3,7 @@ package com.github.spector517.veeapp.backend.controller;
 import com.github.spector517.veeapp.backend.dto.shared.request.XrayConfigRequest;
 import com.github.spector517.veeapp.backend.dto.shared.response.ConfigurationStateResponse;
 import com.github.spector517.veeapp.backend.dto.shared.response.MessageResponse;
+import com.github.spector517.veeapp.backend.dto.shared.response.ServerAddressResponse;
 import com.github.spector517.veeapp.backend.dto.shared.response.XrayVersionsResponse;
 import com.github.spector517.veeapp.backend.service.xrayctl.XrayCtlService;
 
@@ -27,6 +28,15 @@ public class XrayConfigController {
     )
     public ConfigurationStateResponse checkConfig() {
         return new ConfigurationStateResponse(xrayCtlService.isConfigured());
+    }
+
+    @GetMapping("/server-address")
+    @Operation(
+            summary = "Get server public address",
+            description = "Read IP_ADDRESS from /etc/default/veeapp/init.conf and return it"
+    )
+    public ServerAddressResponse serverAddress() {
+        return new ServerAddressResponse(xrayCtlService.getServerAddress());
     }
 
     @PostMapping("/config")

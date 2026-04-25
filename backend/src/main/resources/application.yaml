@@ -18,6 +18,8 @@ spring:
 app:
   xray:
     config-path: /usr/local/etc/xray/config.json
+  server:
+    init-conf-path: /etc/default/veeapp/init.conf
   command:
     timeout-ms: 60000
 

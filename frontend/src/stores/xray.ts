@@ -26,6 +26,7 @@ export const useXrayStore = defineStore('xray', () => {
   const status = ref<StatusResponse | null>(null)
   const configured = ref(false)
   const versions = ref<string[]>([])
+  const serverAddress = ref<string>('')
   const restartRequired = ref(false)
   const loading = ref(false)
   const configChecked = ref(false)
@@ -33,7 +34,7 @@ export const useXrayStore = defineStore('xray', () => {
 
   function errorMessage(e: unknown): string {
     if (e instanceof AxiosError) {
-      return e.response?.data?.message || e.message
+      return e.response?.data?.message || 'Неизвестная ошибка'
     }
     return String(e)
   }
@@ -60,8 +61,23 @@ export const useXrayStore = defineStore('xray', () => {
     }
   }
 
+  async function fetchServerAddress() {
+    try {
+      const res = await xrayConfigApi.serverAddress()
+      serverAddress.value = res.data.address ?? ''
+    } catch (e) {
+      useNotificationStore().show('Ошибка загрузки адреса сервера: ' + errorMessage(e), 'error')
+    }
+  }
+
   async function refreshAll() {
-    await Promise.all([fetchStatus(), checkConfig()])
+    await checkConfig()
+    if (!serverAddress.value) {
+      await fetchServerAddress()
+    }
+    if (configured.value) {
+      await fetchStatus()
+    }
   }
 
   async function fetchVersions(limit = 10) {
@@ -190,6 +206,7 @@ export const useXrayStore = defineStore('xray', () => {
     configured,
     configChecked,
     versions,
+    serverAddress,
     restartRequired,
     loading,
     loadingKey,

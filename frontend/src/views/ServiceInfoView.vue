@@ -18,7 +18,7 @@
     </v-alert>
 
     <!-- Status card -->
-    <v-card class="mb-4">
+    <v-card v-if="xray.configured" class="mb-4">
       <v-card-title class="text-secondary">
         <v-icon start>mdi-information-outline</v-icon>
         Статус сервиса

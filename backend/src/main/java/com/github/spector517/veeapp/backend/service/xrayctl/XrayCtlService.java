@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -29,8 +30,28 @@ public class XrayCtlService {
     @Value("${app.xray.config-path}")
     private String xrayConfigPath;
 
+    @Value("${app.server.init-conf-path}")
+    private String initConfPath;
+
     public boolean isConfigured() {
         return Files.exists(Path.of(xrayConfigPath));
+    }
+
+    public String getServerAddress() {
+        var path = Path.of(initConfPath);
+        if (!Files.exists(path)) {
+            return "";
+        }
+        try {
+            return Files.readAllLines(path).stream()
+                    .filter(line -> line.startsWith("IP_ADDRESS="))
+                    .map(line -> line.substring("IP_ADDRESS=".length()).strip())
+                    .findFirst()
+                    .orElse("");
+        } catch (IOException e) {
+            log.warn("Failed to read init conf: {}", e.getMessage());
+            return "";
+        }
     }
 
     public void config(XrayConfigRequest req) {

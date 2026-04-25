@@ -8,7 +8,7 @@ case "${1:-}" in
         CERTBOT_BIN="/usr/local/bin/certbot"
         CERT_NAME="veeapp"
         HTPASSWD_FILE="/etc/nginx/veeapp.htpasswd"
-        CRON_ENTRY="0 3 */5 * * ${CERTBOT_BIN} renew --quiet"
+        CRON_ENTRY="0 3 */5 * * ${CERTBOT_BIN} renew --quiet --cert-name ${CERT_NAME}"
 
         # shellcheck disable=SC1090
         . "${INIT_CONF}"
@@ -38,7 +38,7 @@ EOF
             python3 -m venv "${CERTBOT_VENV}"
         fi
 
-        "${CERTBOT_VENV}/bin/pip" install --upgrade pip certbot -q
+        "${CERTBOT_VENV}/bin/pip" install --upgrade pip certbot certbot-nginx -q
         ln -sf "${CERTBOT_VENV}/bin/certbot" "${CERTBOT_BIN}"
 
         # --- TLS-сертификат ---------------------------------------------------
@@ -54,8 +54,7 @@ EOF
                 --staging \
                 --non-interactive \
                 --preferred-profile shortlived \
-                --webroot \
-                --webroot-path /var/www/html \
+                --nginx \
                 --ip-address "${IP_ADDRESS}" \
                 --cert-name "${CERT_NAME}" \
                 --agree-tos
@@ -67,7 +66,7 @@ EOF
 
         # --- Cron для обновления сертификата ----------------------------------
 
-        if ! crontab -l 2>/dev/null | grep -qF "${CERTBOT_BIN} renew"; then
+        if ! crontab -l 2>/dev/null | grep -qF "${CERTBOT_BIN} renew --quiet --cert-name ${CERT_NAME}"; then
             (crontab -l 2>/dev/null || true; echo "${CRON_ENTRY}") | crontab -
         fi
 

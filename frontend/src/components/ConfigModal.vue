@@ -114,11 +114,11 @@ watch(model, (open) => {
       }
     }
     formData.value = {
-      host: s?.server_host ?? '',
-      port: s?.server_port ?? undefined,
-      realityHost,
-      realityPort,
-      realityNames: s?.reality_names?.join(',') ?? '',
+      host: s?.server_host || xray.serverAddress || '',
+      port: s?.server_port ?? 443,
+      realityHost: realityHost || 'microsoft.com',
+      realityPort: realityPort ?? 443,
+      realityNames: s?.reality_names?.join(',') ?? 'microsoft.com',
       name: s?.server_name ?? '',
       clean: false,
     }
