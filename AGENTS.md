@@ -5,7 +5,7 @@
 VeeApp is a web management panel for a VPN server powered by [Xray](https://github.com/xtls/xray-core) / [VeePeeNET](https://github.com/spector517/veepeenet). The backend is a REST wrapper around the `xrayctl` CLI tool (provided by VeePeeNET). The frontend is a Vue SPA for managing VPN clients, outbounds, and routing rules. Deployed as a `.deb` package on Ubuntu.
 
 ```
-Browser (Vue SPA)  →  Nginx (:8443, TLS + Basic Auth)  →  Spring Boot (:8080, localhost only)  →  sudo xrayctl (CLI)
+Browser (Vue SPA)  →  Nginx (:8443, TLS + Basic Auth)  →  Spring Boot (:9099, localhost only)  →  sudo xrayctl (CLI)
 ```
 
 No database — all state lives in Xray's config file (`/usr/local/etc/xray/config.json`), managed by `xrayctl`.
@@ -35,7 +35,7 @@ mvn verify                                            # Full cycle: build + gene
 ```bash
 cd frontend
 npm install
-npm run dev       # Dev server (Vite proxies /api → localhost:8080)
+npm run dev       # Dev server (Vite proxies /api → localhost:9099)
 npm run build     # Production build → deploy/resources/frontend/dist/
 ```
 
@@ -117,7 +117,7 @@ com.github.spector517.veeapp.backend
 
 ## Deployment Architecture
 
-- Backend listens on `127.0.0.1:8080` only — no direct external access.
+- Backend listens on `127.0.0.1:9099` only — no direct external access.
 - Nginx handles TLS termination (Let's Encrypt, port 8443) and Basic Auth (`.htpasswd`).
 - Fail2ban protects against brute-force (5 attempts / 10 min → 30 min ban; repeat → 7 day ban).
 - `.deb` package depends on: `nginx`, `fail2ban`, `openjdk-25-jre-headless`, `python3-venv`, `apache2-utils`, `openssl`, `veepeenet (>= 2.4.1)`.
