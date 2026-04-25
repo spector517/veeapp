@@ -66,7 +66,7 @@ node(params.NODE) {
     }
 
     stage("Tests") {
-        ansicolor('xterm') {
+        ansiColor('xterm') {
             dir("${repoDir}/backend") {
                 try {
                     log "Running backend tests"
@@ -80,7 +80,7 @@ node(params.NODE) {
     }
 
     stage("Build Backend") {
-        ansicolor('xterm') {
+        ansiColor('xterm') {
             dir("${repoDir}/backend") {
                 log "Setting backend version to ${pkgVersion}"
                 sh "mvn -B -q versions:set -DnewVersion=${pkgVersion} -DgenerateBackupPoms=false"
