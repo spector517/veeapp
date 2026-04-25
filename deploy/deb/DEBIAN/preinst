@@ -11,6 +11,7 @@ if [[ ! -f "${INIT_CONF}" ]]; then
     exit 1
 fi
 
+# shellcheck disable=SC1090
 . "${INIT_CONF}"
 
 if [[ -z "${IP_ADDRESS:-}" ]]; then
