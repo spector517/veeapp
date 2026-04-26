@@ -38,7 +38,7 @@ EOF
             python3 -m venv "${CERTBOT_VENV}"
         fi
 
-        "${CERTBOT_VENV}/bin/pip" install --upgrade pip certbot certbot-nginx -q
+        "${CERTBOT_VENV}/bin/pip" install --upgrade pip certbot -q
         ln -sf "${CERTBOT_VENV}/bin/certbot" "${CERTBOT_BIN}"
 
         # --- TLS-сертификат ---------------------------------------------------
@@ -54,7 +54,8 @@ EOF
                 --staging \
                 --non-interactive \
                 --preferred-profile shortlived \
-                --nginx \
+                --web-root \
+                --webroot-path /var/www/veeapp \
                 --ip-address "${IP_ADDRESS}" \
                 --cert-name "${CERT_NAME}" \
                 --agree-tos
