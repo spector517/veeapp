@@ -51,11 +51,10 @@ EOF
             fi
 
             "${CERTBOT_BIN}" certonly \
+                --standalone \
                 --staging \
                 --non-interactive \
                 --preferred-profile shortlived \
-                --webroot \
-                --webroot-path /var/www/veeapp \
                 --ip-address "${IP_ADDRESS}" \
                 --cert-name "${CERT_NAME}" \
                 --agree-tos
