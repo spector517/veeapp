@@ -54,7 +54,7 @@ EOF
                 --staging \
                 --non-interactive \
                 --preferred-profile shortlived \
-                --web-root \
+                --webroot \
                 --webroot-path /var/www/veeapp \
                 --ip-address "${IP_ADDRESS}" \
                 --cert-name "${CERT_NAME}" \
