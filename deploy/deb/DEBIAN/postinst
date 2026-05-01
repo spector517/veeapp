@@ -30,7 +30,8 @@ EOF
         chown root:www-data "${HTPASSWD_FILE}"
 
         # --- TLS-сертификат ---------------------------------------------------
-
+        
+        rm -rf "${SSL_DIR}"
         mkdir -p "${SSL_DIR}"
         openssl req -x509 \
             -newkey ec -pkeyopt ec_paramgen_curve:P-256 \
