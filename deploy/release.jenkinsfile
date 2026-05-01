@@ -136,8 +136,6 @@ node(params.NODE) {
         sh "install -Dm644 '${repoDir}/deploy/resources/nginx/veeapp.conf' '${pkgDir}/etc/nginx/sites-available/veeapp'"
         sh "install -Dm644 '${repoDir}/deploy/resources/fail2ban/nginx-veeapp-auth.conf' '${pkgDir}/etc/fail2ban/filter.d/nginx-veeapp-auth.conf'"
         sh "install -Dm644 '${repoDir}/deploy/resources/fail2ban/veeapp-jail.local' '${pkgDir}/etc/fail2ban/jail.d/veeapp.local'"
-        sh "install -Dm755 '${repoDir}/deploy/resources/certbot/pre-hook.sh' '${pkgDir}/etc/letsencrypt/renewal-hooks/pre/veeapp-pre-hook.sh'"
-        sh "install -Dm755 '${repoDir}/deploy/resources/certbot/post-hook.sh' '${pkgDir}/etc/letsencrypt/renewal-hooks/post/veeapp-post-hook.sh'"
         sh "install -Dm644 '${repoDir}/deploy/resources/backend/veeapp-backend.service' '${pkgDir}/etc/systemd/system/veeapp-backend.service'"
 
         sh "dpkg-deb --build --root-owner-group '${pkgDir}' '${debPath}'"
