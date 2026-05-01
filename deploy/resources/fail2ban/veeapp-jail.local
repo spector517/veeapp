@@ -3,15 +3,11 @@ enabled = true
 port = 8443
 filter = nginx-veeapp-auth
 logpath = /var/log/nginx/veeapp_error.log
-maxretry = 5
-findtime = 600
-bantime = 1800
+backend = polling
 
-[nginx-veeapp-recidive]
-enabled = true
-filter = recidive
-logpath = /var/log/fail2ban.log
-maxretry = 10
-findtime = 86400
-bantime = 604800
-banaction = %(banaction_allports)s
+maxretry = 5
+findtime = 15m
+bantime = 1h
+bantime.increment = true
+bantime.factor = 2
+bantime.maxtime = 1w
