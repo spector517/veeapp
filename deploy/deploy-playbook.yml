@@ -30,8 +30,9 @@
         group: root
         mode: '0755'
       become: true
+      check_mode: false
 
-    - name: Check init config exists
+    - name: Ensure init config exists
       ansible.builtin.file:
         path: /etc/default/veeapp/init.conf
         state: file
@@ -40,6 +41,7 @@
         mode: '0600'
       become: true
       register: init_config_check
+      check_mode: false
 
     - name: Create VeeApp init config
       ansible.builtin.copy:
