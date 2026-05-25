@@ -17,8 +17,8 @@
 
     - name: Download VeeApp deb package
       ansible.builtin.get_url:
-        url: "https://github.com/spector517/veeapp/releases/download/v{{ veeapp_version }}/veeapp_{{ veeapp_version }}_all.deb"
-        dest: "{{ remote_temp_dir.path }}/veeapp_{{ veeapp_version }}_all.deb"
+        url: "https://github.com/spector517/veeapp/releases/download/v{{ veeapp_version }}/veeapp_{{ veeapp_version }}_amd64.deb"
+        dest: "{{ remote_temp_dir.path }}/veeapp_{{ veeapp_version }}_amd64.deb"
         mode: '0644'
       check_mode: false
 
@@ -59,7 +59,7 @@
 
     - name: Install VeeApp deb package
       ansible.builtin.apt:
-        deb: "{{ remote_temp_dir.path }}/veeapp_{{ veeapp_version }}_all.deb"
+        deb: "{{ remote_temp_dir.path }}/veeapp_{{ veeapp_version }}_amd64.deb"
       become: true
 
     - name: Clean up temporary files
