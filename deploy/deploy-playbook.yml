@@ -34,7 +34,7 @@
     - name: Check init config exists
       ansible.builtin.file:
         path: /etc/default/veeapp/init.conf
-        state: present
+        state: file
         owner: root
         group: root
         mode: '0600'
