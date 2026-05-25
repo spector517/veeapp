@@ -32,6 +32,12 @@
       become: true
       check_mode: false
 
+    - name: Check if VeeApp init config already exists
+      ansible.builtin.stat:
+        path: /etc/default/veeapp/init.conf
+      register: init_config_check
+      check_mode: false
+
     - name: Create VeeApp init config
       ansible.builtin.copy:
         dest: /etc/default/veeapp/init.conf
