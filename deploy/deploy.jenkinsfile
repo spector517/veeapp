@@ -48,7 +48,7 @@ node(params.NODE) {
 
     repoDir = "${pwd()}/veeapp"
     inventoryPath = "${pwd()}/inventory.ini"
-    deployPlaybookPath = "$repoDir/deploy-playbook.yml"
+    deployPlaybookPath = "$repoDir/deploy/deploy-playbook.yml"
 
     buildName "#$BUILD_NUMBER $params.VEEAPP_VERSION"
 
